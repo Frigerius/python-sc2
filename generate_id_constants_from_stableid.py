@@ -123,9 +123,9 @@ def generate_python_code(enums):
 
         code = [
             HEADER,
-            "import enum",
+            "from enum import IntEnum",
             "",
-            f"class {class_name}(enum.Enum):"
+            f"class {class_name}(IntEnum):"
         ]
 
         for key, value in sorted(body.items(), key=lambda p: p[1]):
