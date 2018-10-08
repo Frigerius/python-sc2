@@ -23,7 +23,8 @@ from .data import Race, ActionResult, ChatChannel
 from .action import combine_actions
 from .position import Point2, Point3
 from .unit import Unit
-from typing import List, Dict, Set, Tuple, Any, Optional, Union # mypy type checking
+from typing import List, Dict, Set, Tuple, Any, Optional, Union  # mypy type checking
+
 
 class Client(Protocol):
     def __init__(self, ws):
@@ -196,7 +197,7 @@ class Client(Protocol):
         results = [float(d.distance) for d in results.query.pathing]
         return results
 
-    async def query_building_placement(self, ability: AbilityId, positions: List[Union[Unit, Point2, Point3]], ignore_resources: bool=True) -> List[ActionResult]:
+    async def query_building_placement(self, ability: AbilityId, positions: List[Union[Unit, Point2, Point3]], ignore_resources: bool = True) -> List[ActionResult]:
         assert isinstance(ability, AbilityData)
         result = await self._execute(query=query_pb.RequestQuery(
             placements=[query_pb.RequestQueryBuildingPlacement(
@@ -207,7 +208,7 @@ class Client(Protocol):
         ))
         return [ActionResult(p.result) for p in result.query.placements]
 
-    async def query_available_abilities(self, units: Union[List[Unit], "Units"], ignore_resource_requirements: bool=False) -> List[List[AbilityId]]:
+    async def query_available_abilities(self, units: Union[List[Unit], "Units"], ignore_resource_requirements: bool = False) -> List[List[AbilityId]]:
         """ Query abilities of multiple units """
         if not isinstance(units, list):
             """ Deprecated, accepting a single unit may be removed in the future, query a list of units instead """
@@ -245,7 +246,7 @@ class Client(Protocol):
         assert isinstance(unit_spawn_commands[0], list)
         assert len(unit_spawn_commands[0]) == 4
         assert isinstance(unit_spawn_commands[0][0], UnitTypeId)
-        assert 0 < unit_spawn_commands[0][1] # careful, in realtime=True this function may create more units
+        assert 0 < unit_spawn_commands[0][1]  # careful, in realtime=True this function may create more units
         assert isinstance(unit_spawn_commands[0][2], (Point2, Point3))
         assert 1 <= unit_spawn_commands[0][3] <= 2
 
@@ -300,7 +301,7 @@ class Client(Protocol):
         """ Draws a text in the top left corner of the screen (up to a max of 6 messages it seems). Don't forget to add 'await self._client.send_debug'. """
         self._debug_texts.append(self.to_debug_message(text))
 
-    def debug_text_screen(self, text: str, pos: Union[Point2, Point3, tuple, list], color=None, size: int=8):
+    def debug_text_screen(self, text: str, pos: Union[Point2, Point3, tuple, list], color=None, size: int = 8):
         """ Draws a text on the screen with coordinates 0 <= x, y <= 1. Don't forget to add 'await self._client.send_debug'. """
         assert len(pos) >= 2
         assert 0 <= pos[0] <= 1
@@ -308,19 +309,19 @@ class Client(Protocol):
         pos = Point2((pos[0], pos[1]))
         self._debug_texts.append(self.to_debug_message(text, color, pos, size))
 
-    def debug_text_2d(self, text: str, pos: Union[Point2, Point3, tuple, list], color=None, size: int=8):
+    def debug_text_2d(self, text: str, pos: Union[Point2, Point3, tuple, list], color=None, size: int = 8):
         return self.debug_text_screen(text, pos, color, size)
 
-    def debug_text_world(self, text: str, pos: Union[Unit, Point2, Point3], color=None, size: int=8):
+    def debug_text_world(self, text: str, pos: Union[Unit, Point2, Point3], color=None, size: int = 8):
         """ Draws a text at Point3 position. Don't forget to add 'await self._client.send_debug'.
         To grab a unit's 3d position, use unit.position3d
         Usually the Z value of a Point3 is between 8 and 14 (except for flying units)
         """
-        if isinstance(pos, Point2) and not isinstance(pos, Point3): # a Point3 is also a Point2
+        if isinstance(pos, Point2) and not isinstance(pos, Point3):  # a Point3 is also a Point2
             pos = Point3((pos.x, pos.y, 0))
         self._debug_texts.append(self.to_debug_message(text, color, pos, size))
 
-    def debug_text_3d(self, text: str, pos: Union[Unit, Point2, Point3], color=None, size: int=8):
+    def debug_text_3d(self, text: str, pos: Union[Unit, Point2, Point3], color=None, size: int = 8):
         return self.debug_text_world(text, pos, color, size)
 
     def debug_line_out(self, p0: Union[Unit, Point2, Point3], p1: Union[Unit, Point2, Point3], color=None):
@@ -345,6 +346,16 @@ class Client(Protocol):
             color=self.to_debug_color(color)
         ))
 
+    def add_debug_object(self, debug_object: Union[debug_pb.DebugText, debug_pb.DebugLine, debug_pb.DebugBox, debug_pb.DebugSphere]):
+        if isinstance(debug_object, debug_pb.DebugText):
+            self._debug_texts.append(debug_object)
+        elif isinstance(debug_object, debug_pb.DebugLine):
+            self._debug_lines.append(debug_object)
+        elif isinstance(debug_object, debug_pb.DebugBox):
+            self._debug_boxes.append(debug_object)
+        elif isinstance(debug_object, debug_pb.DebugSphere):
+            self._debug_spheres.append(debug_object)
+
     async def send_debug(self):
         """ Sends the debug draw execution. Put this after your debug creation functions. """
         await self._execute(debug=sc_pb.RequestDebug(
@@ -365,7 +376,7 @@ class Client(Protocol):
             return debug_pb.Color(r=255, g=255, b=255)
         else:
             if isinstance(color, (tuple, list)):
-                assert(len(color) == 3)
+                assert (len(color) == 3)
 
                 r = color[0]
                 g = color[1]
@@ -388,7 +399,7 @@ class Client(Protocol):
             point = point.position3d
         return common_pb.Point(x=point.x, y=point.y, z=getattr(point, "z", 0))
 
-    def to_debug_message(self, text: str, color=None, pos: Optional[Union[Point2, Point3]]=None, size: int=8) -> debug_pb.DebugText:
+    def to_debug_message(self, text: str, color=None, pos: Optional[Union[Point2, Point3]] = None, size: int = 8) -> debug_pb.DebugText:
         """ Helper function to create debug texts """
         color = self.to_debug_color(color)
         pt3d = self.to_debug_point(pos) if isinstance(pos, Point3) else None
