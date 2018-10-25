@@ -23,7 +23,8 @@ from .data import Race, ActionResult, ChatChannel
 from .action import combine_actions
 from .position import Point2, Point3
 from .unit import Unit
-from typing import List, Dict, Set, Tuple, Any, Optional, Union  # mypy type checking
+from .units import Units
+from typing import List, Dict, Set, Tuple, Any, Optional, Union # mypy type checking
 
 
 class Client(Protocol):
@@ -74,6 +75,7 @@ class Client(Protocol):
         return result.join_game.player_id
 
     async def leave(self):
+        """ You can use 'await self._client.leave()' to surrender midst game. """
         is_resign = self._game_result is None
 
         if is_resign:
@@ -257,6 +259,17 @@ class Client(Protocol):
                 pos=common_pb.Point2D(x=position.x, y=position.y),
                 quantity=amount_of_units
             )) for unit_type, amount_of_units, position, owner_id in unit_spawn_commands]
+        ))
+
+    async def debug_kill_unit(self, unit_tags: Union[Units, List[int], Set[int]]):
+        if isinstance(unit_tags, Units):
+            unit_tags = unit_tags.tags
+        assert len(unit_tags) > 0
+
+        await self._execute(debug=sc_pb.RequestDebug(
+            debug=[debug_pb.DebugCommand(kill_unit=debug_pb.DebugKillUnit(
+                tag=unit_tags
+            ))]
         ))
 
     async def move_camera(self, position: Union[Unit, Point2, Point3]):
